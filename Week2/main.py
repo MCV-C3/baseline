@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
     model = SimpleModel(input_d=C*H*W, hidden_d=300, output_d=8)
     plot_computational_graph(model, input_size=(1, C*H*W))  # Batch size of 1, input_dim=10
-    exit()
+
     model = model.to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
@@ -162,4 +162,3 @@ if __name__ == "__main__":
     # Plot results
     plot_metrics({"loss": train_losses, "accuracy": train_accuracies}, {"loss": test_losses, "accuracy": test_accuracies}, "loss")
     plot_metrics({"loss": train_losses, "accuracy": train_accuracies}, {"loss": test_losses, "accuracy": test_accuracies}, "accuracy")
-    plot_computational_graph(model, input_size=(1, C*H*W))  # Batch size of 1, input_dim=10
