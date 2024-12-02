@@ -10,12 +10,12 @@ from typing import *
 
 class BOVW():
     
-    def __init__(self, detector_type="SIFT", codebook_size:int=50, detector_kwargs:dict={}, codebook_kwargs:dict={}):
+    def __init__(self, detector_type="AKAZE", codebook_size:int=50, detector_kwargs:dict={}, codebook_kwargs:dict={}):
 
         if detector_type == 'SIFT':
             self.detector = cv2.SIFT_create(**detector_kwargs)
-        elif detector_type == 'SURF':
-            self.detector = cv2.xfeatures2d.SURF_create(**detector_kwargs)
+        elif detector_type == 'AKAZE':
+            self.detector = cv2.AKAZE_create(**detector_kwargs)
         elif detector_type == 'ORB':
             self.detector = cv2.ORB_create(**detector_kwargs)
         else:

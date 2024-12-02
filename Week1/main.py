@@ -9,7 +9,7 @@ import tqdm
 import os
 
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score
 
 
 
@@ -40,7 +40,7 @@ def test(dataset: List[Tuple[Type[Image.Image], int]]
     print("predicting the values")
     y_pred = classifier.predict(bovw_histograms)
     
-    print(classification_report(y_true=descriptors_labels, y_pred=y_pred))
+    print("Accuracy on Phase[Test]:", accuracy_score(y_true=descriptors_labels, y_pred=y_pred))
     
 
 def train(dataset: List[Tuple[Type[Image.Image], int]],
@@ -66,7 +66,7 @@ def train(dataset: List[Tuple[Type[Image.Image], int]],
     print("Fitting the classifier")
     classifier = LogisticRegression(class_weight="balanced").fit(bovw_histograms, all_labels)
 
-    print(classification_report(y_true=all_labels, y_pred=classifier.predict(bovw_histograms)))
+    print("Accuracy on Phase[Train]:", accuracy_score(y_true=all_labels, y_pred=classifier.predict(bovw_histograms)))
     
     return bovw, classifier
 
@@ -109,9 +109,9 @@ def Dataset(ImageFolder:str = "data/MIT_split/train") -> List[Tuple[Type[Image.I
 
 
 if __name__ == "__main__":
-     
-    data_train = Dataset(ImageFolder="data/MIT_split/train")
-    data_test = Dataset(ImageFolder="data/MIT_split/test") 
+     #/home/cboned/data/Master/MIT_split
+    data_train = Dataset(ImageFolder="/home/cboned/data/Master/MIT_split/train")
+    data_test = Dataset(ImageFolder="/home/cboned/data/Master/MIT_split/test") 
 
     bovw = BOVW()
     
