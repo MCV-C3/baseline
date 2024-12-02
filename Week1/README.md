@@ -1,4 +1,3 @@
-```markdown
 # README for Baseline Implementation
 
 ## Project Overview
