@@ -9,7 +9,11 @@ from torchvision import models
 import matplotlib.pyplot as plt
 
 from typing import *
+from torchview import draw_graph
+from graphviz import Source
+
 import pdb
+
 
 class SimpleModel(nn.Module):
 
@@ -80,18 +84,8 @@ class VGG16Classifier(nn.Module):
             feature_maps.append(input_image)
             layer_names.append(str(layer))
 
-        for feature_map in feature_maps:
-            print(feature_map.shape)
+        return feature_maps, layer_names
 
-        # Process and visualize feature maps
-        processed_feature_maps = []  # List to store processed feature maps
-        for feature_map in feature_maps:
-            feature_map = feature_map.squeeze(0)  # Remove the batch dimension
-            mean_feature_map = torch.sum(feature_map, 0) / feature_map.shape[0]  # Compute mean across channels
-            processed_feature_maps.append(mean_feature_map.data.cpu().numpy())
-
-
-        return processed_feature_maps, layer_names
 
 
         
@@ -175,38 +169,19 @@ if __name__ == "__main__":
     # Load a pretrained model and modify it
     model = VGG16Classifier(num_classes=10, feature_extraction=False)
     """
-        features.0.weight
-        features.0.bias
-        features.2.weight
-        features.2.bias
-        features.5.weight
-        features.5.bias
-        features.7.weight
-        features.7.bias
-        features.10.weight
-        features.10.bias
-        features.12.weight
-        features.12.bias
-        features.14.weight
-        features.14.bias
-        features.17.weight
-        features.17.bias
-        features.19.weight
-        features.19.bias
-        features.21.weight
-        features.21.bias
-        features.24.weight
-        features.24.bias
-        features.26.weight
-        features.26.bias
-        features.28.weight
-        features.28.bias
-        classifier.0.weight
-        classifier.0.bias
-        classifier.3.weight
-        classifier.3.bias
-        classifier.6.weight
-        classifier.6.bias
+        features.0
+        features.2
+        features.5
+        features.7
+        features.10
+        features.12
+        features.14
+        features.17
+        features.19
+        features.21
+        features.24
+        features.26
+        features.28
     """
 
     # Example GradCAM usage
@@ -214,31 +189,38 @@ if __name__ == "__main__":
     target_layers = [model.backbone.features[2]]
     targets = [ClassifierOutputTarget(9)]
 
+
     # Display processed feature maps shapes
-    processed_feature_maps, layer_names = model.extract_feature_maps(dummy_input)
+    feature_maps, layer_names = model.extract_feature_maps(dummy_input)
 
-    for fm in processed_feature_maps:
-        print(fm.shape)
-
+                                                                 ### Aggregate the feature maps
+    # Process and visualize feature maps
+    processed_feature_maps = []  # List to store processed feature maps
+    for feature_map in feature_maps:
+        feature_map = feature_map.squeeze(0)  # Remove the batch dimension
+        min_feature_map, min_index = torch.min(feature_map, 0) # Get the min across channels
+        processed_feature_maps.append(min_feature_map.data.cpu().numpy())
+    
+    
     # Plot All the convolution feature maps separately
     fig = plt.figure(figsize=(30, 50))
     for i in range(len(processed_feature_maps)):
         ax = fig.add_subplot(5, 4, i + 1)
-        ax.imshow(processed_feature_maps[i])
+        ax.imshow(processed_feature_maps[i], cmap="hot", interpolation="nearest")
         ax.axis("off")
         ax.set_title(f"{layer_names[i].split('(')[0]}_{i}", fontsize=10)
 
 
     plt.show()
 
-    
     ## Plot a concret layer feature map when processing a image thorugh the model
     ## Is not necessary to have gradients
 
     with torch.no_grad():
         feature_map = (model.extract_features_from_hooks(x=dummy_input, layers=["features.28"]))["features.28"]
         feature_map = feature_map.squeeze(0)  # Remove the batch dimension
-        processed_feature_map = torch.sum(feature_map, 0) / feature_map.shape[0]  # Compute mean across channels
+        print(feature_map.shape)
+        processed_feature_map, _ = torch.min(feature_map, 0) 
 
     # Plot the result
     plt.imshow(processed_feature_map, cmap="gray")
@@ -260,3 +242,7 @@ if __name__ == "__main__":
     plt.show()
     #plt.imshow(cam_result.squeeze().numpy(), cmap='jet')
     #plt.show()
+
+    ## Draw the model
+    model_graph = draw_graph(model, input_size=(1, 3, 224, 224), device='meta', expand_nested=True, roll=True)
+    model_graph.visual_graph.render(filename="test", format="png", directory="./Week3")
