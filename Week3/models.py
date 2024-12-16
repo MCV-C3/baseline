@@ -12,6 +12,10 @@ from typing import *
 from torchview import draw_graph
 from graphviz import Source
 
+from PIL import Image
+import torchvision.transforms.v2  as F
+import numpy as np 
+
 import pdb
 
 
@@ -46,9 +50,9 @@ class SimpleModel(nn.Module):
     
 
 
-class VGG16Classifier(nn.Module):
+class WraperModel(nn.Module):
     def __init__(self, num_classes: int, feature_extraction: bool=True):
-        super(VGG16Classifier, self).__init__()
+        super(WraperModel, self).__init__()
 
         # Load pretrained VGG16 model
         self.backbone = models.vgg16(weights='IMAGENET1K_V1')
@@ -79,9 +83,10 @@ class VGG16Classifier(nn.Module):
         print("TOTAL CONV LAYERS: ", total_conv_layers)
         feature_maps = []  # List to store feature maps
         layer_names = []  # List to store layer names
+        x= torch.clone(input=input_image)
         for layer in conv_layers:
-            input_image = layer(input_image)
-            feature_maps.append(input_image)
+            x = layer(x)
+            feature_maps.append(x)
             layer_names.append(str(layer))
 
         return feature_maps, layer_names
@@ -154,7 +159,7 @@ class VGG16Classifier(nn.Module):
 
         with GradCAMPlusPlus(model=self.backbone, target_layers=target_layer) as cam:
 
-            grayscale_cam = cam(input_tensor=dummy_input, targets=targets)[0, :]
+            grayscale_cam = cam(input_tensor=input_image, targets=targets)[0, :]
 
         return grayscale_cam
 
@@ -167,7 +172,10 @@ if __name__ == "__main__":
     torch.manual_seed(42)
 
     # Load a pretrained model and modify it
-    model = VGG16Classifier(num_classes=10, feature_extraction=False)
+    model = WraperModel(num_classes=8, feature_extraction=False)
+    #model.load_state_dict(torch.load("saved_model.pt"))
+    #model = model
+
     """
         features.0
         features.2
@@ -184,14 +192,38 @@ if __name__ == "__main__":
         features.28
     """
 
+    transformation  = F.Compose([
+                                    F.ToImage(),
+                                    F.ToDtype(torch.float32, scale=True),
+                                    F.RandomHorizontalFlip(p=1.),
+                                    F.Resize(size=(256, 256)),
+                                ])
     # Example GradCAM usage
-    dummy_input = torch.randn(1, 3, 224, 224)
-    target_layers = [model.backbone.features[2]]
-    targets = [ClassifierOutputTarget(9)]
+    dummy_input = Image.open("/home/cboned/data/Master/MIT_split/test/highway/art803.jpg")#torch.randn(1, 3, 224, 224)
+    input_image = transformation(dummy_input).unsqueeze(0)
 
+
+
+    target_layers = [model.backbone.features[26]]
+    targets = [ClassifierOutputTarget(6)]
+    
+    image = torch.from_numpy(np.array(dummy_input)).cpu().numpy()
+    image = (image - image.min()) / (image.max() - image.min()) ## Image needs to be between 0 and 1 and be a numpy array (Remember that if you have norlized the image you need to denormalize it before applying this (image * std + mean))
+
+    ## VIsualize the activation map from Grad Cam
+    ## To visualize this, it is mandatory to have gradients.
+    
+    grad_cams = model.extract_grad_cam(input_image=input_image, target_layer=target_layers, targets=targets)
+
+    visualization = show_cam_on_image(image, grad_cams, use_rgb=True)
+
+    # Plot the result
+    plt.imshow(visualization)
+    plt.axis("off")
+    plt.show()
 
     # Display processed feature maps shapes
-    feature_maps, layer_names = model.extract_feature_maps(dummy_input)
+    feature_maps, layer_names = model.extract_feature_maps(input_image)
 
                                                                  ### Aggregate the feature maps
     # Process and visualize feature maps
@@ -217,7 +249,7 @@ if __name__ == "__main__":
     ## Is not necessary to have gradients
 
     with torch.no_grad():
-        feature_map = (model.extract_features_from_hooks(x=dummy_input, layers=["features.28"]))["features.28"]
+        feature_map = (model.extract_features_from_hooks(x=input_image, layers=["features.28"]))["features.28"]
         feature_map = feature_map.squeeze(0)  # Remove the batch dimension
         print(feature_map.shape)
         processed_feature_map, _ = torch.min(feature_map, 0) 
@@ -227,21 +259,7 @@ if __name__ == "__main__":
     plt.axis("off")
     plt.show()
 
-    input_image = dummy_input.squeeze(0).permute(1, 2, 0).cpu().numpy()
-    input_image = (input_image - input_image.min()) / (input_image.max() - input_image.min()) ## Image needs to be between 0 and 1 and be a numpy array (Remember that if you have norlized the image you need to denormalize it before applying this (image * std + mean))
 
-    ## VIsualize the activation map from Grad Cam
-    ## To visualize this, it is mandatory to have gradients.
-    grad_cams = model.extract_grad_cam(input_image=dummy_input, target_layer=target_layers, targets=targets)
-    visualization = show_cam_on_image(input_image, grad_cams, use_rgb=True)
-
-
-    # Plot the result
-    plt.imshow(visualization)
-    plt.axis("off")
-    plt.show()
-    #plt.imshow(cam_result.squeeze().numpy(), cmap='jet')
-    #plt.show()
 
     ## Draw the model
     model_graph = draw_graph(model, input_size=(1, 3, 224, 224), device='meta', expand_nested=True, roll=True)

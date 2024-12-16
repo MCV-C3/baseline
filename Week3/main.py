@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
-from models import SimpleModel, VGG16Classifier
+from models import SimpleModel, WraperModel
 import torchvision.transforms.v2  as F
 from torchviz import make_dot
 import tqdm
@@ -148,12 +148,12 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-    model = VGG16Classifier(num_classes=8, feature_extraction=True)#SimpleModel(input_d=C*H*W, hidden_d=300, output_d=8)
+    model = WraperModel(num_classes=8, feature_extraction=True)#SimpleModel(input_d=C*H*W, hidden_d=300, output_d=8)
 
     model = model.to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
-    num_epochs = 20
+    num_epochs = 3
 
     train_losses, train_accuracies = [], []
     test_losses, test_accuracies = [], []
@@ -170,6 +170,8 @@ if __name__ == "__main__":
         print(f"Epoch {epoch + 1}/{num_epochs} - "
               f"Train Loss: {train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}, "
               f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.4f}")
+        
+    torch.save(model.state_dict(), "./saved_model.pt")
 
     # Plot results
     plot_metrics({"loss": train_losses, "accuracy": train_accuracies}, {"loss": test_losses, "accuracy": test_accuracies}, "loss")
