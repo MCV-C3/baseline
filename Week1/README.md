@@ -28,7 +28,7 @@ pip install numpy opencv-python scikit-learn pillow matplotlib tqdm
 The dataset should follow this structure:
 ```
 data/
-  ├── MIT_split/
+  ├── places_reduced/
   │   ├── train/
   │   │   ├── <class_label>/
   │   │   │   ├── img1.jpg
@@ -59,11 +59,11 @@ python main.py
 ## Results Table
 Below is the baseline performance for different local descriptors:
 
-| Local Descriptor Model | Accuracy Train | Accuracy Test |
-|-------------------------|----------------|---------------|
-| SIFT                   | 0.647          | 0.645         |
-| ORB                    | 0.395          | 0.371         |
-| AKAZE                  | 0.4689         | 0.4426        |
+| Local Descriptor Model | Accuracy Train  | Accuracy Test |
+|------------------------|-----------------|---------------|
+| SIFT                   | 0.334           | 0.313         |
+| ORB                    | 0.22            | 0.171         |
+| AKAZE                  | 0.2367          | 0.2032        |
 
 ## Future Improvements
 - Implement other machine learning models (e.g., SVM) for classification.
